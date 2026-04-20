@@ -1,0 +1,73 @@
+SHELL := /bin/sh
+
+# Detect compose command with clear fallback order:
+# 1) docker compose
+# 2) podman compose
+# 3) podman-compose
+COMPOSE := $(shell \
+	if command -v docker >/dev/null 2>&1; then \
+		echo "docker compose"; \
+	elif command -v podman >/dev/null 2>&1; then \
+		echo "podman compose"; \
+	elif command -v podman-compose >/dev/null 2>&1; then \
+		echo "podman-compose"; \
+	fi \
+)
+
+.DEFAULT_GOAL := help
+
+.PHONY: check-compose help build rebuild up up-d run down logs ps restart clean
+
+check-compose:
+	@if [ -z "$(COMPOSE)" ]; then \
+		echo "Error: no compatible compose tool found."; \
+		echo "Install Docker (docker compose) or Podman (podman compose / podman-compose)."; \
+		exit 1; \
+	fi
+
+help: check-compose
+	@echo ""
+	@echo "Using: $(COMPOSE)"
+	@echo ""
+	@echo "Targets:"
+	@echo "  build     Build images using cache"
+	@echo "  rebuild   Build images without cache"
+	@echo "  up        Start stack in foreground"
+	@echo "  up-d      Start stack in detached mode"
+	@echo "  run       Alias to up"
+	@echo "  down      Stop and remove stack resources"
+	@echo "  logs      Follow service logs"
+	@echo "  ps        Show service status"
+	@echo "  restart   Restart stack (detached)"
+	@echo "  clean     Down + remove orphans, images and volumes"
+	@echo ""
+
+build: check-compose
+	$(COMPOSE) build
+
+rebuild: check-compose
+	$(COMPOSE) build --no-cache
+
+up: check-compose
+	$(COMPOSE) up
+
+up-d: check-compose
+	$(COMPOSE) up -d
+
+run: up
+
+down: check-compose
+	$(COMPOSE) down --remove-orphans
+
+logs: check-compose
+	$(COMPOSE) logs -f
+
+ps: check-compose
+	$(COMPOSE) ps
+
+restart: check-compose
+	$(COMPOSE) down --remove-orphans
+	$(COMPOSE) up -d --build
+
+clean: check-compose
+	$(COMPOSE) down --remove-orphans --rmi local --volumes

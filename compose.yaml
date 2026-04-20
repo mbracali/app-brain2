@@ -1,0 +1,16 @@
+name: "docker-brain2"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: docker-brain2:latest
+    container_name: docker-brain2
+
+    ports:
+      - "8010:8010"
+
+    restart: unless-stopped
+
